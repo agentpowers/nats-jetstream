@@ -1,0 +1,30 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: nats-test-api
+spec:
+  type: NodePort
+  ports:
+  - name: api
+    protocol: TCP
+    port: 80
+    targetPort: 80
+  selector:
+    app: nats-test-api
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nats-test-api-deployment
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: nats-test-api
+    spec:
+      containers:
+      - name: nats-test-api
+        image: nats-test-api   
+        ports:
+        - containerPort: 80

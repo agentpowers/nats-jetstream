@@ -1,0 +1,14 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nats-subscriber-deployment
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: nats-subscriber
+    spec:
+      containers:
+      - name: nats-subscriber
+        image: nats-subscriber   

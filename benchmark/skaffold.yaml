@@ -1,0 +1,12 @@
+apiVersion: skaffold/v1beta1
+kind: Config
+build:
+  artifacts:
+  - image: benchmark
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  kubectl:
+    # manifests to deploy from files.
+    manifests:
+    - k8s.yaml

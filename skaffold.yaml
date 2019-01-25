@@ -1,0 +1,19 @@
+apiVersion: skaffold/v1beta1
+kind: Config
+build:
+  artifacts:
+  - image: nats-subscriber
+    docker:
+      dockerfile: ./nats-subscriber/Dockerfile
+  - image: nats-test-api
+    docker:
+      dockerfile: ./nats-test-api/Dockerfile
+  # - image: sample
+  #   docker:
+  #     dockerfile: Sample.Dockerfile
+deploy:
+  kubectl:
+    # manifests to deploy from files.
+    manifests:
+    - ./nats-subscriber/k8s*
+    - ./nats-test-api/k8s*
