@@ -3,11 +3,9 @@ kind: Config
 build:
   artifacts:
   - image: nats-subscriber
-    docker:
-      dockerfile: ./nats-subscriber/Dockerfile
+    context: ./nats-subscriber
   - image: nats-test-api
-    docker:
-      dockerfile: ./nats-test-api/Dockerfile
+    context: ./nats-test-api
   # - image: sample
   #   docker:
   #     dockerfile: Sample.Dockerfile

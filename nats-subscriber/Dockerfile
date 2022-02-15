@@ -1,14 +1,11 @@
 # base
 FROM microsoft/dotnet:2.1-aspnetcore-runtime AS base
-WORKDIR /app
-EXPOSE 80
 
 # restore dependencies
 FROM microsoft/dotnet:2.1-sdk AS publish
 WORKDIR /src
 COPY . .
-RUN dotnet build
-RUN dotnet publish --no-restore --no-build -o /app
+RUN dotnet publish -o /app
 
 # final
 FROM base AS final

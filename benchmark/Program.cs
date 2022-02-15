@@ -17,6 +17,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using NATS.Client;
+using STAN.Client;
 using System.Diagnostics;
 using System.Threading;
 
@@ -25,8 +26,7 @@ namespace Benchmark
     class Benchmark
     {
         static readonly long DEFAULT_COUNT = 1000000;
-        //String url = "nats://" +Environment.GetEnvironmentVariable("EXAMPLE_NATS_CLUSTER_SERVICE_HOST")+ ":" + Environment.GetEnvironmentVariable("EXAMPLE_NATS_CLUSTER_SERVICE_PORT");
-        string url = "nats://localhost:4222";
+        static string url = "nats://localhost:4222";
         long count = DEFAULT_COUNT;
         long payloadSize = 0;
         string subject = "s";
@@ -158,6 +158,7 @@ namespace Benchmark
 
         void runPub(string testName, long testCount, long testSize)
         {
+            Console.WriteLine("starting " + testName);
             byte[] payload = generatePayload(testSize);
 
             using (IConnection c = new ConnectionFactory().CreateConnection(url))
@@ -175,8 +176,34 @@ namespace Benchmark
             }
         }
 
+        void runPersistedPub(string testName, long testCount, long testSize)
+        {
+            Console.WriteLine("starting " + testName);
+
+            byte[] payload = generatePayload(testSize);
+            var opts = StanOptions.GetDefaultOptions();
+            opts.NatsURL = url;
+            var cf = new StanConnectionFactory();
+
+            using (var c = cf.CreateConnection("test-cluster", "benchmark", opts))
+            {
+                Stopwatch sw = sw = Stopwatch.StartNew();
+
+                for (int i = 0; i < testCount; i++)
+                {
+                    c.Publish(subject, payload);
+                }
+
+                sw.Stop();
+
+                PrintResults(testName, sw, testCount, testSize);
+            }
+        }
+
         void runPubSub(String testName, long testCount, long testSize)
         {
+            Console.WriteLine("starting " + testName);
+
             Object pubSubLock = new Object();
             bool finished = false;
             int subCount = 0;
@@ -233,6 +260,81 @@ namespace Benchmark
 
             pubConn.Close();
             subConn.Close();
+        }
+
+        StanOptions GetStanOptions()
+        {
+            Options nopts = ConnectionFactory.GetDefaultOptions();
+            nopts.MaxReconnect = NATS.Client.Options.ReconnectForever;
+            nopts.MaxPingsOut = 2;   
+            nopts.PingInterval = 1000;
+            nopts.ReconnectedEventHandler = (a,k) => {
+                Console.WriteLine("Reconnected.");
+            };
+            nopts.Url = url;
+            nopts.SubChannelLength = 10000000;
+            nopts.AsyncErrorEventHandler += (sender, obj) =>
+            {
+                System.Console.WriteLine("Error: " + obj.Error);
+            };
+
+            var nc = new ConnectionFactory().CreateConnection(nopts);
+
+            var o = StanOptions.GetDefaultOptions();
+            o.NatsConn = nc;
+            return o;
+        }
+
+        void runPersistedPubSub(String testName, long testCount, long testSize)
+        {
+            Console.WriteLine("starting " + testName);
+            // Setup NATS connection
+            Object pubSubLock = new Object();
+            bool finished = false;
+            int subCount = 0;
+
+            byte[] payload = generatePayload(testSize);
+
+            var cf = new StanConnectionFactory();
+            var subConn = cf.CreateConnection("test-cluster", "benchmark", GetStanOptions());
+            var pubConn = cf.CreateConnection("test-cluster", "benchmark2", GetStanOptions());
+
+            var s = subConn.Subscribe(subject, (sender, args) =>
+            {
+                subCount++;
+                if (subCount == testCount)
+                {
+                    lock (pubSubLock)
+                    {
+                        finished = true;
+                        Monitor.Pulse(pubSubLock);
+                    }
+                }
+            });
+            // s.(10000000, 1000000000);
+            // subConn.Flush();
+
+            Stopwatch sw = Stopwatch.StartNew();
+
+            for (int i = 0; i < testCount; i++)
+            {
+                pubConn.Publish(subject, payload);
+            }
+
+            //pubConn.Flush();
+
+            lock (pubSubLock)
+            {
+                if (!finished)
+                    Monitor.Wait(pubSubLock);
+            
+            }
+            sw.Stop();
+
+            PrintResults(testName, sw, testCount, testSize);
+
+            pubConn.Dispose();
+            subConn.Dispose();
         }
 
         double convertTicksToMicros(long ticks)
@@ -456,9 +558,11 @@ namespace Benchmark
         void runCustomSuite()
         {
             const int tstCnt = 1000000;
-            runPub("PubOnly8b", tstCnt, 32);
+            //runPub("PubOnly8b", tstCnt, 8);
+            runPubSub("PubSub8b", tstCnt, 8);
 
-            runPubSub("PubSub8b", tstCnt, 32);
+            //runPersistedPub("PersistedPubOnly8b", 10000, 8);
+            //runPersistedPubSub("PersistedPubSub8b", 10000, 8);
          }
 
         // void runCustomSuite()
@@ -508,6 +612,8 @@ namespace Benchmark
         {
             try
             {
+                url = "nats://" + Environment.GetEnvironmentVariable("NATS_STREAMING_FT_SERVICE_HOST")+ ":" + Environment.GetEnvironmentVariable("NATS_STREAMING_FT_SERVICE_PORT");
+                Console.WriteLine(url);
                 new Benchmark(args);
             }
             catch (Exception e)

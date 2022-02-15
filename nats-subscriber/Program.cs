@@ -1,85 +1,51 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NATS.Client;
-using STAN.Client;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.AspNetCore.Builder;
+using nats_subscriber;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace nats_subscriber
-{
-    class Program
-    {
-        static void Main(string[] args)
-        {
-            // Creates a live connection to the default
-            // NATS Server running locally
-            IConnection c = GetConnection();
+// namespace nats_subscriber
+// {
+//     class Program
+//     {
+//         static async Task Main(string[] args)
+//         {
+//             await Task.Run(Start);
+//             var host = new HostBuilder()
+//                 .Build();
 
-            EventHandler<MsgHandlerEventArgs> h = (sender, msgArgs) =>
-            {
-                var now = DateTime.Now;
-                var message = msgArgs.Message;
-                var arrivalSub = message.ArrivalSubcription;
-                // print the message
-                Console.WriteLine($"Memory:{now.ToString("u")},Subj={message.Subject},Data={Encoding.UTF8.GetString(message.Data)},ArrivalSub={arrivalSub.Subject}|{arrivalSub.QueuedMessageCount}|{arrivalSub.Queue}");
-            };
+//             host.Run();
+//         }
 
-            // The simple way to create an asynchronous subscriber
-            // is to simply pass the event in.  Messages will start
-            // arriving immediately.
-            IAsyncSubscription s = c.SubscribeAsync("*", h);
 
-            IStanConnection sc = GetStanConnection();
+//         private static async Task Start()
+//         {
+//             // Create a new connection factory to create
+//             // a connection.
+//             ConnectionFactory cf = new ConnectionFactory();
 
-            EventHandler<StanMsgHandlerArgs> sh = (sender, msgArgs) =>
-            {
-                var now = DateTime.Now;
-                var message = msgArgs.Message;
-                // print the message
-                Console.WriteLine($"Persisted:{now.ToString("u")},Subj={message.Subject},Data={Encoding.UTF8.GetString(message.Data)}");
-            };
+//             // Creates a live connection to the default
+//             // NATS Server running locally
+//             IConnection c = cf.CreateConnection();
 
-            // The simple way to create an asynchronous subscriber
-            // is to simply pass the event in.  Messages will start
-            // arriving immediately.
-            IStanSubscription ss = sc.Subscribe("key", sh);
+//             IJetStream js = c.CreateJetStreamContext();
 
-            var host = new HostBuilder()
-                .Build();
+//             PullSubscribeOptions options = PullSubscribeOptions.Builder()
+//                 .WithDurable("durable-name-is-required")
+//                 .Build();
 
-            host.Run();
-        }
+//             IJetStreamPullSubscription sub = js.PullSubscribe("test.*", options);
 
-        public static string NatsUrl()
-        {
-            // var natsClusterHost = Environment.GetEnvironmentVariable("EXAMPLE_NATS_CLUSTER_SERVICE_HOST");
-            // var natsClusterPort = Environment.GetEnvironmentVariable("EXAMPLE_NATS_CLUSTER_SERVICE_PORT");
-            // return $"nats://{natsClusterHost}:{natsClusterPort}";
-            return Defaults.Url;
-        }
+//             var message = sub.Fetch(1, 1000); // 100 messages, 1000 millis timeout
+//             foreach(var m in message)
+//             {
+//                 // process message
+//                 m.Ack();
+//             }
+//         }
+//     }
+// }
 
-        public static IConnection GetConnection()
-        {
-            var cf = new ConnectionFactory();
-            var opts = ConnectionFactory.GetDefaultOptions();
-            opts.Url = NatsUrl();
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddHostedService<ReceiverService>();
+var app = builder.Build();
 
-            // Creates a live connection to the default
-            // NATS Server running locally
-            return cf.CreateConnection(opts);
-        }
-
-        public static IStanConnection GetStanConnection()
-        {
-            var cf = new StanConnectionFactory();
-            var opts = StanOptions.GetDefaultOptions();
-            opts.NatsURL = NatsUrl();
-
-            // Creates a live connection to the default
-            // NATS Server running locally
-            return cf.CreateConnection("test-cluster", "nats-subscriber-api", opts);
-        }
-    }
-}
+app.Run();

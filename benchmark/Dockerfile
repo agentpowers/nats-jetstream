@@ -1,6 +1,5 @@
 # base
 FROM microsoft/dotnet:2.1-sdk AS base
-WORKDIR /app
 
 # restore dependencies
 FROM microsoft/dotnet:2.1-sdk AS publish

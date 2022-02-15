@@ -50,10 +50,8 @@ namespace nats_test_api
 
         public string NatsUrl()
         {
-            // var natsClusterHost = Environment.GetEnvironmentVariable("EXAMPLE_NATS_CLUSTER_SERVICE_HOST");
-            // var natsClusterPort = Environment.GetEnvironmentVariable("EXAMPLE_NATS_CLUSTER_SERVICE_PORT");
-            // return $"nats://{natsClusterHost}:{natsClusterPort}";
-            return Defaults.Url;
+            return "nats://" + Environment.GetEnvironmentVariable("NATS_STREAMING_FT_SERVICE_HOST")+ ":" + Environment.GetEnvironmentVariable("NATS_STREAMING_FT_SERVICE_PORT");
+            //return Defaults.Url;
         }
 
         public IConnection GetConnection()
@@ -61,6 +59,8 @@ namespace nats_test_api
             var cf = new ConnectionFactory();
             var opts = ConnectionFactory.GetDefaultOptions();
             opts.Url = NatsUrl();
+
+            Console.WriteLine(opts.Url);
 
             // Creates a live connection to the default
             // NATS Server running locally
@@ -72,6 +72,8 @@ namespace nats_test_api
             var cf = new StanConnectionFactory();
             var opts = StanOptions.GetDefaultOptions();
             opts.NatsURL = NatsUrl();
+
+            Console.WriteLine(opts.NatsURL);
 
             // Creates a live connection to the default
             // NATS Server running locally

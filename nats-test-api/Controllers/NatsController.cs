@@ -25,7 +25,7 @@ namespace nats_test_api.Controllers
 
 
         [HttpGet("publish")]
-        public void Publish([FromQuery]string key, [FromQuery]string value, [FromQuery]int count = 1)
+        public string Publish([FromQuery]string key, [FromQuery]string value, [FromQuery]int count = 1)
         {
             Stopwatch sw = sw = Stopwatch.StartNew();
 
@@ -35,19 +35,27 @@ namespace nats_test_api.Controllers
             }
 
             sw.Stop();
+
+            Console.WriteLine("Took " + sw.ElapsedMilliseconds);
+
+            return sw.ElapsedMilliseconds.ToString();
         }
 
         [HttpGet("publish-persisted")]
-        public void PublishPersisted([FromQuery]string key, [FromQuery]string value, [FromQuery]int count = 1)
+        public async Task<string> PublishPersisted([FromQuery]string key, [FromQuery]string value, [FromQuery]int count = 1)
         {
             Stopwatch sw = sw = Stopwatch.StartNew();
 
             for (int i = 0; i < count; i++)
             {
-                _stanConnection.Publish(key, Encoding.UTF8.GetBytes(value));
+                var resp = await _stanConnection.PublishAsync(key, Encoding.UTF8.GetBytes(value));
             }
 
             sw.Stop();
+
+            Console.WriteLine("Took " + sw.ElapsedMilliseconds);
+
+            return sw.ElapsedMilliseconds.ToString();
         }
     }
 }

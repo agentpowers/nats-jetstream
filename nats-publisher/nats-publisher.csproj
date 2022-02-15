@@ -2,12 +2,13 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>nats_publisher</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NATS.Client" Version="0.8.1" />
+    <!-- <PackageReference Include="NATS.Client" Version="0.14.5" /> -->
+    <ProjectReference Include="..\..\..\nats.net\src\NATS.Client\NATS.Client.csproj" />
   </ItemGroup>
 
 </Project>

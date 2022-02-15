@@ -3,10 +3,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="NATS.Client" Version="0.8.1" />
+    <PackageReference Include="STAN.Client" Version="0.1.4" />
   </ItemGroup>
 
 </Project>
